@@ -259,7 +259,7 @@ const COLS_PROS=[['job','Flag',76],['address','Detail / Lot',160],['estate','Est
  ['price','Price',78],['offer','Offer',78],['type','Type',58],['referral','Referral',64],['notes','Notes',260]];
 const MILES=['inspect','loform','voi','eoi','paperwork','contract','deposit','bp','valuation','unconditional','settlement'];
 const DATE_FIELDS=new Set(['inspect','deposit','bp','valuation','unconditional','settlement']);
-const CLICKABLE=new Set([...MILES,'offer','price']);
+const CLICKABLE=new Set([...MILES,'offer','price','job','address','estate','design','budget','type','referral','notes']);
 const LEGEND=[['done','Complete'],['prog','In progress'],['soon','Action required'],['lead','Warm lead'],['pink','Follow-up sent'],['lost','Lost / issue']];
 const MONTH_ORDER=['January','February','March','April','May','June','July','August','September','October','November','December'];
 const MONTHS={jan:0,feb:1,mar:2,apr:3,may:4,jun:5,jul:6,aug:7,sep:8,oct:9,nov:10,dec:11};
@@ -526,10 +526,13 @@ function openPop(ev,id,f){
   popCtx={id,f};
   const r=byId(id);
   const pop=document.getElementById('pop');
-  document.getElementById('popTitle').textContent=(COLS_PIPE.find(c=>c[0]===f)||[,f])[1]+' — '+(r.d.name||'');
+  const cols=tab==='pros'?COLS_PROS:COLS_PIPE;
+  document.getElementById('popTitle').textContent=(cols.find(c=>c[0]===f)||[,f])[1]+' — '+(r.d.name||'');
   document.getElementById('popVal').value=r.d[f]||'';
   const d=parseD(r.d[f]);
-  document.getElementById('popDate').value=d?d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0'):'';
+  const dateEl=document.getElementById('popDate');
+  dateEl.style.display=DATE_FIELDS.has(f)?'':'none';
+  dateEl.value=d?d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0'):'';
   pop.style.display='block';
   const w=230,h=pop.offsetHeight||190;
   let x=Math.min(ev.clientX,innerWidth-w-12), y=ev.clientY+12;
@@ -548,7 +551,10 @@ function popApply(color){
   else if(color===null){ if(val)r.d[f]=val; else delete r.d[f]; }
   else{
     r.c[f]=color==='na'?'':color;
-    r.d[f]=val||(color==='na'?'N/A':(DATE_FIELDS.has(f)&&document.getElementById('popDate').value?val:DEFAULT_VAL[color]));
+    const ident=!MILES.includes(f)&&f!=='offer'&&f!=='price';
+    if(val)r.d[f]=val;
+    else if(color==='na')r.d[f]='N/A';
+    else if(!ident)r.d[f]=DEFAULT_VAL[color];
     if(color==='na')delete r.c[f];
   }
   if((color==='done'||color==='prog')&&r.sec==='pros'){
