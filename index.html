@@ -427,7 +427,7 @@ function cellHtml(r,f){
       let s=mc; if(mv==='n/a')s='na'; else if(!mc&&mv)s='done';
       return `<i class="s-${s||'empty'}" title="${mf}"></i>`;
     }).join('');
-    return `<td class="name-cell ${c?'c-'+c:''}" onclick="togglePanel(${r.id})" title="Click to open"><span class="exp">${expanded===r.id?'▼':'▶'}</span>${inner||'—'}${r.sec==='pipe'?`<span class="spots">${spots}</span>`:''}</td>`;
+    return `<td class="name-cell ${c?'c-'+c:''}" onclick="togglePanel(${r.id})" oncontextmenu="openPop(event,${r.id},'name');return false" title="Click to open · right-click for colour"><span class="exp">${expanded===r.id?'▼':'▶'}</span>${inner||'—'}${r.sec==='pipe'?`<span class="spots">${spots}</span>`:''}</td>`;
   }
   const na=(v.toLowerCase&&v.toLowerCase()==='n/a');
   return `<td class="${cls}${click?' cc':''}${na?'':''}" ${click?`onclick="openPop(event,${r.id},'${f}')"`:''} title="${esc(v)}">${inner}</td>`;
@@ -478,6 +478,16 @@ function panelHtml(r,span){
       <div class="pcard">
         <h4>Deal progress — ${pct}%</h4>
         <div class="progressbar"><i style="width:${pct}%"></i></div>
+        <label>Status colour (name cell)</label>
+        <div class="swatches" style="grid-template-columns:repeat(7,1fr);margin-bottom:2px">
+          <button style="background:var(--c-done)" title="Complete" onclick="setNameColor(${r.id},'done')">✓</button>
+          <button style="background:var(--c-prog)" title="In progress" onclick="setNameColor(${r.id},'prog')">◐</button>
+          <button style="background:var(--c-soon)" title="Action required" onclick="setNameColor(${r.id},'soon')">❗</button>
+          <button style="background:var(--c-lead)" title="Warm lead" onclick="setNameColor(${r.id},'lead')">●</button>
+          <button style="background:var(--c-pink)" title="Follow-up sent" onclick="setNameColor(${r.id},'pink')">✆</button>
+          <button style="background:var(--c-lost)" title="Lost / issue" onclick="setNameColor(${r.id},'lost')">✕</button>
+          <button style="background:#fff" title="Clear colour" onclick="setNameColor(${r.id},'clear')">⌀</button>
+        </div>
         <label>Phone</label><input value="${esc(r.phone||'')}" onchange="setContact(${r.id},'phone',this.value)" placeholder="0400 000 000">
         <label>Email</label><input value="${esc(r.email||'')}" onchange="setContact(${r.id},'email',this.value)" placeholder="name@email.com">
       </div>
@@ -490,6 +500,12 @@ function panelHtml(r,span){
   </td></tr>`;
 }
 function setContact(id,f,v){ byId(id)[f]=v.trim(); save(); toast('Saved'); }
+function setNameColor(id,color){
+  const r=byId(id);
+  if(color==='clear')delete r.c.name; else r.c.name=color;
+  r.row=r.c.name||(r.sec==='pros'?'lead':'prog');
+  save(); renderAll(); toast('Status colour updated');
+}
 function addNote(id){
   const inp=document.getElementById('note-'+id); const t=inp.value.trim(); if(!t)return;
   const r=byId(id); (r.log=r.log||[]).push({t,when:new Date().toLocaleString('en-AU',{day:'numeric',month:'short',hour:'2-digit',minute:'2-digit'})});
@@ -559,6 +575,7 @@ function popApply(color){
     else if(!ident)r.d[f]=DEFAULT_VAL[color];
     if(color==='na')delete r.c[f];
   }
+  if(f==='name'){ r.row=r.c.name||(r.sec==='pros'?'lead':'prog'); }
   if((color==='done'||color==='prog')&&r.sec==='pros'){
     const isOffer=f==='offer';
     if(isOffer){
