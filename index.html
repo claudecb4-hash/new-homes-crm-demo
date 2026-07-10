@@ -69,6 +69,11 @@ tr.grp-row.estate td{background:var(--c-note);letter-spacing:.5px;text-transform
 tr.rec:hover td{filter:brightness(.96)}
 tr.rec.drag-src td{opacity:.35}
 tr.rec.drag-over td{border-top:3px solid var(--xl-green)}
+tr.spare{cursor:cell}
+tr.spare td{background:#fff}
+tr.spare:hover td{background:#f5faf6}
+tr.spare:hover td:nth-child(2)::after{content:'＋ double-click to add new entry';color:#9dbfa4;font-size:11px}
+tr.spare.drag-over td{border-top:3px solid var(--xl-green)}
 td.cc{cursor:pointer}
 td.cc:hover{outline:2px solid var(--xl-green);outline-offset:-2px}
 td.c-done{background:var(--c-done)}
@@ -451,6 +456,8 @@ function renderTable(){
       if(expanded===r.id)h+=panelHtml(r,cols.length);
     });
   });
+  const spare=`<tr class="spare" title="Double-click to add a new entry" ondblclick="openAdd()" ondragover="spareOver(event)" ondragleave="dragLeave(event)" ondrop="dropEnd(event)">${cols.map(()=>'<td></td>').join('')}</tr>`;
+  for(let i=0;i<5;i++)h+=spare;
   h+='</tbody></table>';
   document.getElementById('sheet').innerHTML=h;
   document.getElementById('footCount').textContent=rows.length+' rows shown';
@@ -600,6 +607,16 @@ function bubbleUp(r){
   data.splice(data.indexOf(first),0,r);
 }
 function groupOfPipe(r){ const d=parseD(r.d.settlement); return d?MONTH_ORDER[d.getMonth()]:(r.grp||'Unscheduled'); }
+function spareOver(ev){ if(dragId==null)return; ev.preventDefault(); ev.dataTransfer.dropEffect='move'; ev.currentTarget.classList.add('drag-over'); }
+function dropEnd(ev){
+  ev.preventDefault();
+  if(dragId==null){dragEnd();return}
+  const src=byId(dragId);
+  data=data.filter(r=>r.id!==src.id);
+  data.push(src);
+  dragEnd(); save(); renderAll();
+  toast((src.d.name||'Row')+' moved to the end of its group');
+}
 let dragId=null;
 function dragStart(ev,id){ dragId=id; ev.dataTransfer.effectAllowed='move'; document.getElementById('row-'+id).classList.add('drag-src'); }
 function dragOver(ev,id){ if(dragId==null||id===dragId)return; ev.preventDefault(); ev.dataTransfer.dropEffect='move'; ev.currentTarget.classList.add('drag-over'); }
