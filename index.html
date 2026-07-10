@@ -55,6 +55,13 @@ body{font-family:var(--font);font-size:13px;color:#111;background:#e6e6e6;displa
 .legend-chip .sw{width:12px;height:12px;border-radius:2px;border:1px solid rgba(0,0,0,.25)}
 .legend-chip.on{outline:2px solid var(--xl-green);background:#eef7f0}
 .toolbar select{font-family:var(--font);font-size:12px;padding:3px 6px;border:1px solid #bbb;border-radius:3px;background:#fff}
+.efilter{position:relative;display:inline-block}
+.efpanel{display:none;position:absolute;top:110%;left:0;background:#fff;border:1px solid #999;border-radius:4px;box-shadow:0 6px 20px rgba(0,0,0,.22);padding:8px 10px;z-index:150;min-width:170px;max-height:280px;overflow:auto}
+.efpanel.open{display:block}
+.efpanel label{display:flex;gap:7px;align-items:center;font-size:12.5px;padding:3px 2px;cursor:pointer;white-space:nowrap}
+.efpanel label:hover{background:#f2f8f3}
+.efpanel .eflinks{border-bottom:1px solid #eee;padding-bottom:5px;margin-bottom:5px;font-size:11.5px}
+.efpanel .eflinks a{color:var(--xl-green-dark);cursor:pointer;text-decoration:underline}
 .toolbar .right{margin-left:auto;display:flex;gap:6px}
 .tbtn{border:1px solid #bbb;background:#f7f7f7;border-radius:3px;padding:4px 10px;font-size:12px;cursor:pointer;font-family:var(--font)}
 .tbtn:hover{background:#eee}
@@ -184,7 +191,10 @@ tr.panel>td{background:#F3F8F4;border-top:2px solid var(--xl-green);padding:10px
 <div class="toolbar">
   <span style="font-size:11px;color:#777;font-weight:700">KEY:</span>
   <span id="legend"></span>
-  <select id="fEstate" onchange="renderAll()"><option value="">All estates</option></select>
+  <div class="efilter">
+    <button class="tbtn" id="efBtn" onclick="togEstatePanel(event)">All estates ▾</button>
+    <div class="efpanel" id="efPanel"></div>
+  </div>
   <div class="right">
     <button class="tbtn" onclick="exportCsv()">⬇ Export CSV</button>
   </div>
@@ -271,7 +281,7 @@ const MONTHS={jan:0,feb:1,mar:2,apr:3,may:4,jun:5,jul:6,aug:7,sep:8,oct:9,nov:10
 const DEFAULT_VAL={done:'Done',prog:'In progress',soon:'Action',na:'N/A',lost:'✕',pink:'Follow-up sent'};
 
 /* ================= STATE ================= */
-let data, tab='pipe', legendOn=new Set(), expanded=null, popCtx=null, editId=null;
+let data, tab='pipe', legendOn=new Set(), estateFilter=new Set(), expanded=null, popCtx=null, editId=null;
 
 /* Safe storage: falls back to in-memory if the browser blocks localStorage
    (e.g. some browsers on file:// pages, or private browsing). */
@@ -380,6 +390,19 @@ function jumpTo(id){
   if(row){row.scrollIntoView({behavior:'smooth',block:'center'});row.classList.add('flash');setTimeout(()=>row.classList.remove('flash'),1700);}
 }
 
+/* ================= ESTATE MULTI-FILTER ================= */
+function estatesList(){ return [...new Set(data.map(r=>(r.d.estate||'').trim()).filter(Boolean))].sort(); }
+function renderEstateFilter(){
+  const n=estateFilter.size, list=estatesList();
+  document.getElementById('efBtn').textContent=(n===0?'All estates':n===1?[...estateFilter][0]:[...estateFilter][0]+' +'+(n-1))+' ▾';
+  document.getElementById('efPanel').innerHTML=
+    `<div class="eflinks"><a onclick="clearEstates()">Show all estates</a></div>`+
+    list.map((e,i)=>`<label><input type="checkbox" ${estateFilter.has(e)?'checked':''} onchange="togEstateIdx(${i})"> ${esc(e)}</label>`).join('');
+}
+function togEstatePanel(ev){ ev.stopPropagation(); document.getElementById('efPanel').classList.toggle('open'); }
+function togEstateIdx(i){ const e=estatesList()[i]; estateFilter.has(e)?estateFilter.delete(e):estateFilter.add(e); renderAll(); }
+function clearEstates(){ estateFilter.clear(); renderAll(); }
+
 /* ================= LEGEND ================= */
 function renderLegend(){
   document.getElementById('legend').innerHTML=LEGEND.map(([k,l])=>
@@ -391,10 +414,9 @@ function togLegend(k){ legendOn.has(k)?legendOn.delete(k):legendOn.add(k); rende
 function esc(s){ return String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
 function visible(){
   const q=document.getElementById('q').value.toLowerCase().trim();
-  const fe=document.getElementById('fEstate').value;
   return data.filter(r=>{
     if(bucket(r)!==tab)return false;
-    if(fe&&(r.d.estate||'').trim()!==fe)return false;
+    if(estateFilter.size&&!estateFilter.has((r.d.estate||'').trim()))return false;
     if(legendOn.size&&!legendOn.has(r.row))return false;
     if(q){const hay=[r.d.name,r.d.address,r.d.estate,r.d.notes,r.d.job,(r.log||[]).map(e=>e.t).join(' ')].join(' ').toLowerCase(); if(!hay.includes(q))return false;}
     return true;
@@ -596,7 +618,10 @@ function popApply(color){
   if(r.sec==='pipe'&&progress(r)===100&&color==='done'){toast('💚 Every milestone green — ready to settle!');}
 }
 function closePop(){ document.getElementById('pop').style.display='none'; popCtx=null; }
-document.addEventListener('click',e=>{ if(!e.target.closest('.pop')&&!e.target.closest('td.cc'))closePop(); });
+document.addEventListener('click',e=>{
+  if(!e.target.closest('.pop')&&!e.target.closest('td.cc'))closePop();
+  if(!e.target.closest('.efilter'))document.getElementById('efPanel').classList.remove('open');
+});
 document.addEventListener('keydown',e=>{ if(e.key==='Escape'){closePop();closeOverlay('editOverlay');closeOverlay('intOverlay');} });
 
 /* ================= ORDERING: BUBBLE-UP & DRAG ================= */
@@ -777,9 +802,7 @@ function renderAll(){
   const counts={pipe:0,pros:0,settled:0};
   data.forEach(r=>counts[bucket(r)]++);
   ['pipe','pros','settled'].forEach(k=>document.getElementById('cnt-'+k).textContent=counts[k]);
-  const fe=document.getElementById('fEstate'); const cur=fe.value;
-  const estates=[...new Set(data.map(r=>(r.d.estate||'').trim()).filter(Boolean))].sort();
-  fe.innerHTML='<option value="">All estates</option>'+estates.map(e=>`<option${e===cur?' selected':''}>${esc(e)}</option>`).join('');
+  renderEstateFilter();
   renderScore(); renderStrip(); renderLegend(); renderTable();
 }
 
