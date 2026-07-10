@@ -468,7 +468,9 @@ function panelHtml(r,span){
       <button class="pbtn" onclick="contactAction(${r.id},'mailto')">✉️ Email</button>
       ${calBtns}
       ${r.sec==='pros'?`<button class="pbtn" onclick="promote(${r.id})">⬆ Promote to Pipeline</button>`:''}
-      ${r.sec==='pipe'&&!isSettled(r)?`<button class="pbtn" onclick="settle(${r.id})">🏆 Mark Settled</button>`:''}
+      ${r.sec==='pipe'&&!isSettled(r)?`<button class="pbtn" onclick="settle(${r.id})">🏆 Mark Settled</button>
+      <button class="pbtn" onclick="demote(${r.id})">⬇ Return to Prospects</button>`:''}
+      ${isSettled(r)?`<button class="pbtn" onclick="reopen(${r.id})">↩ Reopen deal</button>`:''}
       <button class="pbtn" onclick="openEdit(${r.id})">✏️ Edit details</button>
       <button class="pbtn warn" onclick="removeRec(${r.id})">🗑 Remove</button>
     </div>
@@ -620,6 +622,26 @@ function settle(id){
   (r.log=r.log||[]).push({t:'🏆 SETTLED!',when:new Date().toLocaleDateString('en-AU')});
   expanded=null; save(); renderAll(); confetti(36);
   toast('🏆 SETTLED — congratulations! Another one on the board.',4000);
+}
+function demote(id){
+  const r=byId(id);
+  const reason=prompt('Why is '+(r.d.name||'this buyer')+' returning to Prospects? (optional — e.g. finance fell through)','');
+  if(reason===null)return;
+  r.sec='pros'; r.settledFlag=false; r.row='lead';
+  r.grp=(r.d.estate||'Other').trim();
+  ['job','address','estate','name','design','budget'].forEach(f=>{ if(r.d[f])r.c[f]='lead'; });
+  (r.log=r.log||[]).push({t:'⬇ Returned to Prospects'+(reason.trim()?' — '+reason.trim():''),when:new Date().toLocaleDateString('en-AU')});
+  expanded=null; save(); setTab('pros');
+  toast('⬇ '+(r.d.name||'Buyer')+' moved back to Prospects — history kept');
+  setTimeout(()=>jumpTo(id),100);
+}
+function reopen(id){
+  const r=byId(id);
+  r.settledFlag=false;
+  (r.log=r.log||[]).push({t:'↩ Deal reopened',when:new Date().toLocaleDateString('en-AU')});
+  expanded=null; save(); setTab('pipe');
+  toast('↩ '+(r.d.name||'Deal')+' is back in the Pipeline');
+  setTimeout(()=>jumpTo(id),100);
 }
 function removeRec(id){
   const r=byId(id);
