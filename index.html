@@ -101,6 +101,8 @@ td.name-cell .exp{font-size:10px;color:rgba(0,0,0,.55);margin-right:3px}
 .spots i.s-na{background:#c9c9c9}
 .spots i.s-pink{background:var(--c-pink)}
 .delta{font-size:10px;font-weight:700;margin-left:4px;color:#08500d}
+.fresh{background:var(--c-soon);color:#fff;border-radius:8px;font-size:9.5px;font-weight:700;padding:1px 6px;margin-left:5px;vertical-align:1px;animation:pulse 1.8s infinite}
+@keyframes pulse{50%{opacity:.5}}
 td.c-done .delta,td.c-prog .delta{color:#063f0a}
 .flash td{animation:flash 1.6s}
 @keyframes flash{0%,60%{box-shadow:inset 0 0 0 99px rgba(33,115,70,.35)}}
@@ -182,6 +184,7 @@ tr.panel>td{background:#F3F8F4;border-top:2px solid var(--xl-green);padding:10px
 
 <!-- ===================== SHEET TABS ===================== -->
 <div class="tabs">
+  <div class="tab" id="tab-leads" onclick="setTab('leads')">🌐 Leads <span class="cnt" id="cnt-leads">0</span></div>
   <div class="tab active" id="tab-pipe" onclick="setTab('pipe')">📋 Sales Pipeline <span class="cnt" id="cnt-pipe">0</span></div>
   <div class="tab" id="tab-pros" onclick="setTab('pros')">🔥 Prospects <span class="cnt" id="cnt-pros">0</span></div>
   <div class="tab" id="tab-settled" onclick="setTab('settled')">🏆 Settled <span class="cnt" id="cnt-settled">0</span></div>
@@ -196,6 +199,7 @@ tr.panel>td{background:#F3F8F4;border-top:2px solid var(--xl-green);padding:10px
     <div class="efpanel" id="efPanel"></div>
   </div>
   <div class="right">
+    <button class="tbtn" onclick="openEnquiryForm()">🌐 Website form</button>
     <button class="tbtn" onclick="exportCsv()">⬇ Export CSV</button>
   </div>
 </div>
@@ -241,6 +245,34 @@ tr.panel>td{background:#F3F8F4;border-top:2px solid var(--xl-green);padding:10px
   </div>
 </div>
 
+<!-- ===================== WEBSITE ENQUIRY FORM (PREVIEW) ===================== -->
+<div class="overlay" id="formOverlay">
+  <div class="modal" style="max-width:620px">
+    <h2>🌐 Enquiry form — website preview</h2>
+    <p style="font-size:12px;color:#777;margin-bottom:12px">This is the form customers would fill out on the company website (or via a realestate.com.au listing link). Submissions land in the <b>Leads</b> tab — or attach to an existing contact automatically.</p>
+    <div class="mgrid" style="grid-template-columns:1fr 1fr">
+      <div class="full"><label>Name *</label><input id="w-name" placeholder="Your full name"></div>
+      <div><label>Email * <span style="font-weight:400;color:#999">(email and/or phone)</span></label><input id="w-email" placeholder="you@email.com"></div>
+      <div><label>Phone</label><input id="w-phone" placeholder="0400 000 000"></div>
+      <div class="full"><label>What is your enquiry about? *</label>
+        <select id="w-etype" onchange="wTypeChanged()">
+          <option value="">Choose…</option>
+          <option>Enquiring about a specific home</option>
+          <option>General enquiry</option>
+        </select></div>
+      <div class="full"><label id="w-interest-label">Which home are you interested in? *</label><input id="w-interest" placeholder="e.g. Lot 120 (6) Maple Street, or paste the realestate.com.au link"></div>
+      <div><label>Bedrooms</label><select id="w-beds"><option value=""></option><option>2</option><option>3</option><option>4</option><option>5+</option></select></div>
+      <div><label>Bathrooms</label><select id="w-baths"><option value=""></option><option>1</option><option>2</option><option>3+</option></select></div>
+      <div><label>Garage</label><select id="w-garage"><option value=""></option><option>Single</option><option>Double</option><option>Triple+</option></select></div>
+      <div><label>Price range</label><select id="w-price"><option value=""></option><option>Under $800K</option><option>$800K – $1M</option><option>$1M – $1.2M</option><option>$1.2M – $1.5M</option><option>Over $1.5M</option></select></div>
+    </div>
+    <div class="foot">
+      <button class="btn btn-grey" onclick="closeOverlay('formOverlay')">Cancel</button>
+      <button class="btn btn-green" onclick="submitEnquiry()">Submit enquiry</button>
+    </div>
+  </div>
+</div>
+
 <!-- ===================== INTEGRATIONS MODAL ===================== -->
 <div class="overlay" id="intOverlay">
   <div class="modal" style="max-width:560px">
@@ -248,9 +280,25 @@ tr.panel>td{background:#F3F8F4;border-top:2px solid var(--xl-green);padding:10px
     <div class="int-item"><span class="ico">📅</span><div><b>Calendar events (.ics)</b> <span class="badge live">WORKS NOW</span><br>Every dated milestone (inspection, B&amp;P, valuation, unconditional, settlement) can be downloaded as a calendar invite — opens straight into <b>Outlook Calendar</b> and <b>iPhone Calendar</b>. Find it under a customer's row → 📅 Calendar.</div></div>
     <div class="int-item"><span class="ico">📧</span><div><b>Email</b> <span class="badge live">WORKS NOW</span><br>The ✉️ Email action opens a pre-addressed draft in your default mail app (incl. Outlook desktop &amp; mobile). Add each customer's email in their detail panel.</div></div>
     <div class="int-item"><span class="ico">📞</span><div><b>Phone / iPhone</b> <span class="badge live">WORKS NOW</span><br>📞 Call uses <code>tel:</code> links — on iPhone (or Mac with Handoff) it dials directly. This page also works full-screen on iPhone: Share → Add to Home Screen.</div></div>
-    <div class="int-item"><span class="ico">🗓️</span><div><b>Full Outlook sync (Microsoft Graph)</b> <span class="badge road">ROADMAP</span><br>Two-way sync of mail + calendar via Microsoft 365 sign-in: inspections auto-create Outlook events, emails to/from a customer auto-attach to their log. Needs the CRM hosted with a Microsoft app registration (Azure AD) — the next step after this prototype is approved.</div></div>
-    <div class="int-item" style="border:none"><span class="ico">📱</span><div><b>Native iOS app / push reminders</b> <span class="badge road">ROADMAP</span><br>Same data as an installable app with push notifications ("B&amp;P due tomorrow — Lot 120"). The prototype's data model is already structured for this.</div></div>
-    <div class="foot"><button class="btn btn-green" onclick="closeOverlay('intOverlay')">Close</button></div>
+    <div class="int-item"><span class="ico">🪟</span><div><b>Windows</b> <span class="badge live">WORKS NOW</span><br>The CRM runs in Edge/Chrome on Windows, and calendar files open straight into Outlook desktop. Edge's "Install as app" puts it in the Start menu like a native program.</div></div>
+    <div class="int-item"><span class="ico">🤖</span><div><b>Android</b> <span class="badge live">WORKS NOW</span><br>Call/email/calendar actions all work on Android (calendar files open in Google Calendar or Outlook mobile). Chrome's "Add to Home screen" installs it like an app.</div></div>
+    <div class="int-item"><span class="ico">🌐</span><div><b>Website leads → Leads tab</b> <span class="badge live">IN PROTOTYPE</span><br>The 🌐 Website form button previews the customer enquiry form. Submissions drop into the <b>Leads</b> tab as fresh leads — and if the email, phone or name matches an existing contact, the enquiry attaches to their file and flags them 🔔 NEW instead of creating a duplicate. In production the same form on the company website (and realestate.com.au / Domain lead emails) posts to the CRM automatically.</div></div>
+    <div class="int-item"><span class="ico">🗓️</span><div><b>Full Outlook sync (Microsoft Graph)</b> <span class="badge road">ROADMAP</span><br>Two-way sync of mail + calendar via Microsoft 365 sign-in: inspections auto-create Outlook events, emails to/from a customer auto-attach to their log. Works on Windows, Mac, iPhone and Android once the CRM is hosted with a Microsoft app registration.</div></div>
+    <div class="int-item"><span class="ico">📱</span><div><b>Native mobile apps / push reminders</b> <span class="badge road">ROADMAP</span><br>Same data as installable iOS + Android apps with push notifications ("B&amp;P due tomorrow — Lot 120"). The data model is already structured for this.</div></div>
+    <div class="int-item" style="border:none"><span class="ico">📞</span><div><b>Call tracking &amp; AI auto-answer</b> <span class="badge road">ROADMAP</span><br>Company numbers (below) route through a call platform so every answered/missed call logs against the caller's contact file. Missed calls go to an AI receptionist that can answer basic questions, book inspection times, take a message and create a lead in the Leads tab — with a promise that a consultant will follow up on anything it couldn't answer.</div></div>
+
+    <h2 style="margin-top:14px;font-size:15px">⚙️ Admin — company lead settings</h2>
+    <div class="mgrid" style="grid-template-columns:1fr 1fr">
+      <div><label>Lead notification email</label><input id="adm-email" placeholder="sales@company.com.au"></div>
+      <div><label>Website form endpoint</label><input value="POST /api/leads — issued when hosted" disabled style="color:#999"></div>
+      <div><label>Landline</label><input id="adm-land" placeholder="07 0000 0000"></div>
+      <div><label>Mobile</label><input id="adm-mob" placeholder="0400 000 000"></div>
+      <div class="full"><label style="display:flex;gap:7px;align-items:center;font-weight:400"><input type="checkbox" id="adm-ai" style="width:auto"> Enable AI auto-answer for missed calls when available</label></div>
+    </div>
+    <div class="foot">
+      <button class="btn btn-grey" onclick="closeOverlay('intOverlay')">Close</button>
+      <button class="btn btn-green" onclick="saveAdmin()">Save settings</button>
+    </div>
   </div>
 </div>
 
@@ -272,9 +320,13 @@ const COLS_PIPE=[['job','Job',58],['address','Address',150],['estate','Estate',5
 const COLS_PROS=[['job','Flag',76],['address','Detail / Lot',160],['estate','Estate',58],['name','Name',160],
  ['design','Design',66],['budget','Budget',66],['inspect','Inspection Date',96],['loform','Letter of Offer',92],
  ['price','Price',78],['offer','Offer',78],['type','Type',58],['referral','Referral',64],['notes','Notes',260]];
+const COLS_LEADS=[['received','Received',80],['name','Name',150],['email','Email',170],['phone','Phone',105],
+ ['etype','Enquiry Type',105],['interest','Home / Question',250],['features','Features',140],
+ ['pricerange','Price Range',105],['source','Source',95],['notes','Notes',200]];
 const MILES=['inspect','loform','voi','eoi','paperwork','contract','deposit','bp','valuation','unconditional','settlement'];
 const DATE_FIELDS=new Set(['inspect','deposit','bp','valuation','unconditional','settlement']);
-const CLICKABLE=new Set([...MILES,'offer','price','job','address','estate','design','budget','type','referral','notes']);
+const CLICKABLE=new Set([...MILES,'offer','price','job','address','estate','design','budget','type','referral','notes',
+ 'received','email','phone','etype','interest','features','pricerange','source']);
 const LEGEND=[['done','Complete'],['prog','In progress'],['soon','Action required'],['lead','Warm lead'],['pink','Follow-up sent'],['lost','Lost / issue']];
 const MONTH_ORDER=['January','February','March','April','May','June','July','August','September','October','November','December'];
 const MONTHS={jan:0,feb:1,mar:2,apr:3,may:4,jun:5,jul:6,aug:7,sep:8,oct:9,nov:10,dec:11};
@@ -323,7 +375,7 @@ function daysAway(d){ return Math.round((d-NOW)/864e5); }
 
 /* ================= CLASSIFY / METRICS ================= */
 function isSettled(r){ return r.sec==='pipe'&&!!r.settledFlag; }
-function bucket(r){ return r.sec==='pros'?'pros':(isSettled(r)?'settled':'pipe'); }
+function bucket(r){ return r.sec==='lead'?'leads':r.sec==='pros'?'pros':(isSettled(r)?'settled':'pipe'); }
 function progress(r){
   let done=0,tot=0;
   MILES.forEach(f=>{
@@ -376,7 +428,10 @@ function renderStrip(){
   items.sort((a,b)=>a.d-b.d);
   const lab={inspect:'Inspection',loform:'LO Form',voi:'VOI',eoi:'EOI',paperwork:'Paperwork',contract:'Contract',deposit:'Deposit',bp:'B&P',valuation:'Valuation',unconditional:'Unconditional',settlement:'Settlement'};
   let h='<span class="lbl">📌 THIS WEEK:</span>';
-  if(!items.length)h+='<span style="color:#999;font-size:12px">Nothing due — go find some buyers! 🔍</span>';
+  data.filter(r=>r.fresh).forEach(r=>{
+    h+=`<span class="chip" onclick="jumpTo(${r.id})"><span class="dot" style="background:var(--c-soon)"></span>🔔 Fresh enquiry — ${esc(r.d.name||'')}</span>`;
+  });
+  if(!items.length&&!data.some(r=>r.fresh))h+='<span style="color:#999;font-size:12px">Nothing due — go find some buyers! 🔍</span>';
   items.slice(0,14).forEach(it=>{
     const od=it.away<0;
     h+=`<span class="chip${od?' overdue':''}" onclick="jumpTo(${it.r.id})"><span class="dot" style="background:var(--c-${od?'lost':'soon'})"></span>${esc(it.r.d.name)} — ${lab[it.f]} ${fmtD(it.d)}${od?' ⚠︎':''}</span>`;
@@ -423,7 +478,7 @@ function visible(){
   });
 }
 function groupsFor(rows){
-  if(tab==='pros'){
+  if(tab==='pros'||tab==='leads'){
     const order=[],seen={};
     rows.forEach(r=>{const g=(r.grp||'Other').trim();if(!seen[g]){seen[g]=[];order.push(g)}seen[g].push(r)});
     return order.map(g=>[g,seen[g]]);
@@ -454,13 +509,13 @@ function cellHtml(r,f){
       let s=mc; if(mv==='n/a')s='na'; else if(!mc&&mv)s='done';
       return `<i class="s-${s||'empty'}" title="${mf}"></i>`;
     }).join('');
-    return `<td class="name-cell ${c?'c-'+c:''}" onclick="togglePanel(${r.id})" oncontextmenu="openPop(event,${r.id},'name');return false" title="Click to open · right-click for colour"><span class="exp">${expanded===r.id?'▼':'▶'}</span>${inner||'—'}${r.sec==='pipe'?`<span class="spots">${spots}</span>`:''}</td>`;
+    return `<td class="name-cell ${c?'c-'+c:''}" onclick="togglePanel(${r.id})" oncontextmenu="openPop(event,${r.id},'name');return false" title="Click to open · right-click for colour"><span class="exp">${expanded===r.id?'▼':'▶'}</span>${inner||'—'}${r.fresh?'<span class="fresh">🔔 NEW</span>':''}${r.sec==='pipe'?`<span class="spots">${spots}</span>`:''}</td>`;
   }
   const na=(v.toLowerCase&&v.toLowerCase()==='n/a');
   return `<td class="${cls}${click?' cc':''}${na?'':''}" ${click?`onclick="openPop(event,${r.id},'${f}')"`:''} title="${esc(v)}">${inner}</td>`;
 }
 function renderTable(){
-  const cols=tab==='pros'?COLS_PROS:COLS_PIPE;
+  const cols=tab==='pros'?COLS_PROS:tab==='leads'?COLS_LEADS:COLS_PIPE;
   const rows=visible();
   let h='<table><colgroup>'+cols.map(c=>`<col style="min-width:${c[2]}px;max-width:${c[2]*2.2}px">`).join('')+'</colgroup><thead><tr>';
   cols.forEach(c=>h+=`<th>${c[1]}</th>`);
@@ -470,7 +525,7 @@ function renderTable(){
     h+=`<tr><td colspan="${cols.length}"><div class="empty">${msg}</div></td></tr>`;
   }
   groupsFor(rows).forEach(([g,rs])=>{
-    h+=`<tr class="grp-row${tab==='pros'?' estate':''}"><td colspan="${cols.length}">${esc(g)}${tab!=='pros'?` <span style="font-weight:400;color:#888;font-size:11.5px">· ${rs.length} deal${rs.length>1?'s':''}</span>`:` <span style="font-weight:400;font-size:11.5px">· ${rs.length}</span>`}</td></tr>`;
+    h+=`<tr class="grp-row${tab==='pros'||tab==='leads'?' estate':''}"><td colspan="${cols.length}">${esc(g)}${tab==='pipe'||tab==='settled'?` <span style="font-weight:400;color:#888;font-size:11.5px">· ${rs.length} deal${rs.length>1?'s':''}</span>`:` <span style="font-weight:400;font-size:11.5px">· ${rs.length}</span>`}</td></tr>`;
     rs.forEach(r=>{
       h+=`<tr class="rec" id="row-${r.id}" draggable="true" ondragstart="dragStart(event,${r.id})" ondragover="dragOver(event,${r.id})" ondragleave="dragLeave(event)" ondrop="dropRow(event,${r.id})" ondragend="dragEnd()">`;
       cols.forEach(c=>h+=cellHtml(r,c[0]));
@@ -496,6 +551,8 @@ function panelHtml(r,span){
       <button class="pbtn" onclick="contactAction(${r.id},'tel')">📞 Call</button>
       <button class="pbtn" onclick="contactAction(${r.id},'mailto')">✉️ Email</button>
       ${calBtns}
+      ${r.sec==='lead'?`<button class="pbtn" onclick="convertLead(${r.id})">⬆ Convert to Prospect</button>`:''}
+      ${r.fresh?`<button class="pbtn" onclick="ackFresh(${r.id})">🔕 Acknowledge enquiry</button>`:''}
       ${r.sec==='pros'?`<button class="pbtn" onclick="promote(${r.id})">⬆ Promote to Pipeline</button>`:''}
       ${r.sec==='pipe'&&!isSettled(r)?`<button class="pbtn" onclick="settle(${r.id})">🏆 Mark Settled</button>
       <button class="pbtn" onclick="demote(${r.id})">⬇ Return to Prospects</button>`:''}
@@ -505,8 +562,8 @@ function panelHtml(r,span){
     </div>
     <div class="panel-grid">
       <div class="pcard">
-        <h4>Deal progress — ${pct}%</h4>
-        <div class="progressbar"><i style="width:${pct}%"></i></div>
+        ${r.sec==='lead'?`<h4>Lead — received ${esc(r.d.received||'')}</h4>`:`<h4>Deal progress — ${pct}%</h4>
+        <div class="progressbar"><i style="width:${pct}%"></i></div>`}
         <label>Status colour (name cell)</label>
         <div class="swatches" style="grid-template-columns:repeat(7,1fr);margin-bottom:2px">
           <button style="background:var(--c-done)" title="Complete" onclick="setNameColor(${r.id},'done')">✓</button>
@@ -573,7 +630,7 @@ function openPop(ev,id,f){
   popCtx={id,f};
   const r=byId(id);
   const pop=document.getElementById('pop');
-  const cols=tab==='pros'?COLS_PROS:COLS_PIPE;
+  const cols=tab==='pros'?COLS_PROS:tab==='leads'?COLS_LEADS:COLS_PIPE;
   document.getElementById('popTitle').textContent=(cols.find(c=>c[0]===f)||[,f])[1]+' — '+(r.d.name||'');
   document.getElementById('popVal').value=r.d[f]||'';
   const d=parseD(r.d[f]);
@@ -662,6 +719,73 @@ function dropRow(ev,targetId){
   dragEnd(); save(); renderAll();
 }
 
+/* ================= WEBSITE ENQUIRY FORM & LEADS ================= */
+function openEnquiryForm(){ document.getElementById('formOverlay').classList.add('open'); }
+function wTypeChanged(){
+  const t=document.getElementById('w-etype').value;
+  document.getElementById('w-interest-label').textContent=
+    t==='General enquiry'?'Your question *':'Which home are you interested in? *';
+  document.getElementById('w-interest').placeholder=
+    t==='General enquiry'?'e.g. Do you have any homes coming up in Pines Estate in the next 3 months?':'e.g. Lot 120 (6) Maple Street, or paste the realestate.com.au link';
+}
+function submitEnquiry(){
+  const g=id=>document.getElementById(id).value.trim();
+  const name=g('w-name'), email=g('w-email'), phone=g('w-phone'), etype=g('w-etype'), interest=g('w-interest');
+  if(!name){alert('Please enter your name');return}
+  if(!email&&!phone){alert('Please provide an email or a phone number so we can get back to you');return}
+  if(!etype){alert('Please choose what your enquiry is about');return}
+  if(!interest){alert(etype==='General enquiry'?'Please type your question':'Please tell us which home you are interested in');return}
+  const feats=[g('w-beds')&&g('w-beds')+' bed',g('w-baths')&&g('w-baths')+' bath',g('w-garage')&&g('w-garage')+' garage'].filter(Boolean).join(' · ');
+  const price=g('w-price');
+  const now=new Date();
+  const stamp=fmtD(now)+' '+now.toLocaleTimeString('en-AU',{hour:'2-digit',minute:'2-digit'});
+  const summary='🌐 Website enquiry ('+stamp+'): '+(etype==='General enquiry'?'General — ':'Home — ')+interest+
+    (feats?' | Wants: '+feats:'')+(price?' | Price range: '+price:'');
+  // duplicate detection: email, phone, or exact name match against every record
+  const em=email.toLowerCase(), ph=phone.replace(/\D/g,'');
+  const match=data.find(r=>
+    (em&&(r.email||'').toLowerCase()===em)||
+    (ph.length>=8&&(r.phone||'').replace(/\D/g,'')===ph)||
+    ((r.d.name||'').trim().toLowerCase()===name.toLowerCase()));
+  ['w-name','w-email','w-phone','w-etype','w-interest','w-beds','w-baths','w-garage','w-price'].forEach(i=>document.getElementById(i).value='');
+  closeOverlay('formOverlay');
+  if(match){
+    match.fresh=true;
+    if(!match.email&&email)match.email=email;
+    if(!match.phone&&phone)match.phone=phone;
+    (match.log=match.log||[]).push({t:summary,when:stamp});
+    save(); renderAll();
+    toast('🔔 Matched to existing contact — enquiry added to '+(match.d.name||'their')+' file',4000);
+    jumpTo(match.id);
+    return;
+  }
+  const r={id:nextId(),sec:'lead',grp:'Website enquiries',row:'lead',fresh:true,email,phone,
+    d:{received:fmtD(now),name,email,phone,etype:etype==='General enquiry'?'General':'Specific home',
+       interest,features:feats,pricerange:price,source:'Website form'},
+    c:{name:'lead',received:'lead'},log:[{t:summary,when:stamp}]};
+  data.unshift(r);
+  save(); setTab('leads'); toast('🌐 New lead — '+name); confetti(10);
+  setTimeout(()=>jumpTo(r.id),100);
+}
+function convertLead(id){
+  const r=byId(id);
+  const blob=((r.d.interest||'')+' '+(r.d.notes||'')).toLowerCase();
+  const est=estatesList().find(e=>blob.includes(e.toLowerCase()))||'';
+  r.sec='pros'; r.grp=est||'Other'; r.row='lead'; delete r.fresh;
+  r.d.estate=est; r.d.address=r.d.interest||''; r.d.budget=r.d.pricerange||''; r.d.design=r.d.features||'';
+  r.d.notes=[r.d.etype,r.d.interest].filter(Boolean).join(' — ')+(r.d.notes?' | '+r.d.notes:'');
+  r.c={name:'lead',address:'lead',estate:'lead'};
+  (r.log=r.log||[]).push({t:'⬆ Converted to Prospect'+(est?' ('+est+')':''),when:new Date().toLocaleDateString('en-AU')});
+  expanded=null; save(); setTab('pros');
+  toast('⬆ '+(r.d.name||'Lead')+' is now a Prospect'+(est?' in '+est:''));
+  setTimeout(()=>jumpTo(id),100);
+}
+function ackFresh(id){
+  const r=byId(id); delete r.fresh;
+  (r.log=r.log||[]).push({t:'🔕 Enquiry acknowledged',when:new Date().toLocaleDateString('en-AU')});
+  save(); renderAll(); toast('Acknowledged');
+}
+
 /* ================= LIFECYCLE ACTIONS ================= */
 function promote(id){
   const r=byId(id);
@@ -710,14 +834,14 @@ function removeRec(id){
 
 /* ================= ADD / EDIT ================= */
 function fieldRows(sec){
-  const base=sec==='pros'?COLS_PROS:COLS_PIPE;
+  const base=sec==='pros'?COLS_PROS:sec==='lead'?COLS_LEADS:COLS_PIPE;
   return base.map(c=>c[0]);
 }
 function openAdd(){
   editId=null;
   document.getElementById('editTitle').textContent='Add record';
   document.getElementById('delBtn').style.display='none';
-  buildEditForm({sec:tab==='pros'?'pros':'pipe',d:{},c:{}});
+  buildEditForm({sec:tab==='pros'?'pros':tab==='leads'?'lead':'pipe',d:{},c:{}});
   document.getElementById('editOverlay').classList.add('open');
 }
 function openEdit(id){
@@ -731,10 +855,13 @@ function buildEditForm(r){
   const labs={job:'Job #',address:'Address / Lot',estate:'Estate',name:'Name *',design:'Home Design',budget:'Budget',
    inspect:'Inspection Date',loform:'Letter of Offer',price:'Price',offer:'Offer Received',voi:'VOI',eoi:'EOI',
    paperwork:'Paperwork',contract:'Contract',deposit:'Deposit',bp:'Building & Pest',valuation:'Valuation',
-   unconditional:'Unconditional',settlement:'Settlement',type:'Type (builder)',referral:'Referral',notes:'Notes'};
+   unconditional:'Unconditional',settlement:'Settlement',type:'Type (builder)',referral:'Referral',notes:'Notes',
+   received:'Received',email:'Email',phone:'Phone',etype:'Enquiry Type',interest:'Home / Question',
+   features:'Features',pricerange:'Price Range',source:'Source'};
   let h=`<div class="full"><label>Record type</label><select id="e-sec"${editId?' disabled':''}>
      <option value="pipe"${r.sec==='pipe'?' selected':''}>Sales Pipeline deal</option>
-     <option value="pros"${r.sec==='pros'?' selected':''}>Prospect</option></select></div>`;
+     <option value="pros"${r.sec==='pros'?' selected':''}>Prospect</option>
+     <option value="lead"${r.sec==='lead'?' selected':''}>Lead</option></select></div>`;
   fieldRows(r.sec).forEach(f=>{
     h+=`<div class="${f==='notes'||f==='address'?'full':''}"><label>${labs[f]||f}</label><input id="e-${f}" value="${esc(r.d[f]||'')}"></div>`;
   });
@@ -746,7 +873,7 @@ function saveEdit(){
   const sec=document.getElementById('e-sec').value;
   let r;
   if(editId){ r=byId(editId); }
-  else{ r={id:nextId(),sec,grp:sec==='pros'?'':MONTH_ORDER[NOW.getMonth()],row:sec==='pros'?'lead':'prog',d:{},c:{},log:[]}; data.push(r); }
+  else{ r={id:nextId(),sec,grp:sec==='pipe'?MONTH_ORDER[NOW.getMonth()]:sec==='lead'?'Website enquiries':'',row:sec==='pipe'?'prog':'lead',d:{},c:{},log:[]}; data.push(r); }
   fieldRows(r.sec).forEach(f=>{
     const el=document.getElementById('e-'+f); if(!el)return;
     const v=el.value.trim();
@@ -756,17 +883,33 @@ function saveEdit(){
   r.email=document.getElementById('e-email').value.trim();
   if(!r.d.name){alert('Name is required');return}
   if(r.sec==='pros')r.grp=(r.d.estate||'Other').trim();
+  if(r.sec==='lead'){ r.grp='Website enquiries'; if(!r.d.received)r.d.received=fmtD(new Date()); if(!r.d.source)r.d.source='Manual'; if(r.d.email)r.email=r.d.email; if(r.d.phone)r.phone=r.d.phone; }
   if(!editId&&r.sec==='pros'){['job','address','estate','name'].forEach(f=>{if(r.d[f])r.c[f]='lead'});}
   closeOverlay('editOverlay'); save(); renderAll();
   toast(editId?'Saved':'Added — '+r.d.name); editId=null;
 }
 function deleteRec(){ if(editId){closeOverlay('editOverlay');removeRec(editId);editId=null;} }
 function closeOverlay(id){ document.getElementById(id).classList.remove('open'); }
-function openIntegrations(){ document.getElementById('intOverlay').classList.add('open'); }
+function openIntegrations(){
+  let a={}; try{a=JSON.parse(store.get('crmAdmin')||'{}')}catch(e){}
+  document.getElementById('adm-email').value=a.email||'';
+  document.getElementById('adm-land').value=a.landline||'';
+  document.getElementById('adm-mob').value=a.mobile||'';
+  document.getElementById('adm-ai').checked=!!a.ai;
+  document.getElementById('intOverlay').classList.add('open');
+}
+function saveAdmin(){
+  store.set('crmAdmin',JSON.stringify({
+    email:document.getElementById('adm-email').value.trim(),
+    landline:document.getElementById('adm-land').value.trim(),
+    mobile:document.getElementById('adm-mob').value.trim(),
+    ai:document.getElementById('adm-ai').checked}));
+  closeOverlay('intOverlay'); toast('⚙️ Company settings saved');
+}
 
 /* ================= CSV ================= */
 function exportCsv(){
-  const cols=tab==='pros'?COLS_PROS:COLS_PIPE;
+  const cols=tab==='pros'?COLS_PROS:tab==='leads'?COLS_LEADS:COLS_PIPE;
   const rows=visible();
   const lines=[cols.map(c=>'"'+c[1]+'"').join(',')];
   rows.forEach(r=>lines.push(cols.map(c=>'"'+String(r.d[c[0]]||'').replace(/"/g,'""')+'"').join(',')));
@@ -799,9 +942,9 @@ function confetti(n){
   }
 }
 function renderAll(){
-  const counts={pipe:0,pros:0,settled:0};
+  const counts={leads:0,pipe:0,pros:0,settled:0};
   data.forEach(r=>counts[bucket(r)]++);
-  ['pipe','pros','settled'].forEach(k=>document.getElementById('cnt-'+k).textContent=counts[k]);
+  ['leads','pipe','pros','settled'].forEach(k=>document.getElementById('cnt-'+k).textContent=counts[k]);
   renderEstateFilter();
   renderScore(); renderStrip(); renderLegend(); renderTable();
 }
