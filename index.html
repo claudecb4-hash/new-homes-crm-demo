@@ -439,7 +439,8 @@ function renderStrip(){
   document.getElementById('strip').innerHTML=h;
 }
 function jumpTo(id){
-  const r=byId(id); const b=bucket(r);
+  const r=byId(id); if(!r)return;
+  const b=bucket(r);
   if(b!==tab){setTab(b);}
   const row=document.getElementById('row-'+id);
   if(row){row.scrollIntoView({behavior:'smooth',block:'center'});row.classList.add('flash');setTimeout(()=>row.classList.remove('flash'),1700);}
